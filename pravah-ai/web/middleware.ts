@@ -20,46 +20,54 @@ function decodeSessionPayload(token: string) {
 }
 
 export function middleware(request: NextRequest) {
-  const { pathname } = request.nextUrl;
+  try {
+    const { pathname } = request.nextUrl;
 
-  // Skip static assets, internal paths, and API routes
-  if (
-    pathname.startsWith('/_next') ||
-    pathname.startsWith('/api') ||
-    pathname.startsWith('/static') ||
-    pathname.includes('.')
-  ) {
+    // Skip static assets, internal paths, and API routes
+    if (
+      pathname.startsWith('/_next') ||
+      pathname.startsWith('/api') ||
+      pathname.startsWith('/static') ||
+      pathname.includes('.')
+    ) {
+      return NextResponse.next();
+    }
+
+    const sessionCookie = request.cookies.get(COOKIE_NAME)?.value;
+    const session = sessionCookie ? decodeSessionPayload(sessionCookie) : null;
+
+    // 1. If accessing login while already authenticated
+    if (pathname === '/login') {
+      if (session) {
+        const url = request.nextUrl.clone();
+        url.pathname = session.role === 'CITIZEN' ? '/citizen/grievances' : '/dashboard';
+        return NextResponse.redirect(url);
+      }
+      return NextResponse.next();
+    }
+
+    // 2. Role check for citizen accessing authority dashboard
+    if (pathname.startsWith('/dashboard')) {
+      if (session && session.role === 'CITIZEN') {
+        const url = request.nextUrl.clone();
+        url.pathname = '/citizen/grievances';
+        return NextResponse.redirect(url);
+      }
+      // Super Admin check for /dashboard/admin
+      if (pathname.startsWith('/dashboard/admin')) {
+        if (session && session.role !== 'SUPER_ADMIN' && session.role !== 'NODAL_OFFICER') {
+          const url = request.nextUrl.clone();
+          url.pathname = '/dashboard';
+          return NextResponse.redirect(url);
+        }
+      }
+    }
+
+    return NextResponse.next();
+  } catch (err) {
+    console.error('Middleware safe-fallback:', err);
     return NextResponse.next();
   }
-
-  const sessionCookie = request.cookies.get(COOKIE_NAME)?.value;
-  const session = sessionCookie ? decodeSessionPayload(sessionCookie) : null;
-
-  // 1. If accessing login while already authenticated
-  if (pathname === '/login') {
-    if (session) {
-      if (session.role === 'CITIZEN') {
-        return NextResponse.redirect(new URL('/citizen/grievances', request.url));
-      }
-      return NextResponse.redirect(new URL('/dashboard', request.url));
-    }
-    return NextResponse.next();
-  }
-
-  // 2. Role check for citizen accessing authority dashboard
-  if (pathname.startsWith('/dashboard')) {
-    if (session && session.role === 'CITIZEN') {
-      return NextResponse.redirect(new URL('/citizen/grievances', request.url));
-    }
-    // Super Admin check for /dashboard/admin
-    if (pathname.startsWith('/dashboard/admin')) {
-      if (session && session.role !== 'SUPER_ADMIN' && session.role !== 'NODAL_OFFICER') {
-        return NextResponse.redirect(new URL('/dashboard', request.url));
-      }
-    }
-  }
-
-  return NextResponse.next();
 }
 
 export const config = {
