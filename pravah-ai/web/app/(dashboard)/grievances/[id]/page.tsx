@@ -3,6 +3,7 @@ import prisma from '@/lib/prisma';
 import ShapWaterfall from '@/components/intelligence/ShapWaterfall';
 import DeadlockGraph from '@/components/intelligence/DeadlockGraph';
 import EvidenceTimeline from '@/components/media/EvidenceTimeline';
+import RecommendationActions from '@/components/grievance/RecommendationActions';
 import { 
   ArrowLeft, 
   MapPin, 
@@ -263,26 +264,13 @@ export default async function GrievanceDetailPage({
           </div>
 
           <div className="flex items-center gap-2 flex-shrink-0">
-            <form action="/api/recommendations/approve" method="POST">
-              <input type="hidden" name="grievanceId" value={grievance.id} />
-              <button
-                type="submit"
-                className="bg-emerald-600 hover:bg-emerald-500 text-white px-3.5 py-2 rounded-lg text-xs font-bold tracking-wide shadow-md transition-all flex items-center gap-1.5"
-              >
-                <CheckCircle2 className="w-4 h-4" />
-                <span>Approve Action</span>
-              </button>
-            </form>
-            <form action="/api/recommendations/reject" method="POST">
-              <input type="hidden" name="grievanceId" value={grievance.id} />
-              <button
-                type="submit"
-                className="bg-dark-800 hover:bg-dark-750 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold border border-dark-700 transition-all flex items-center gap-1.5"
-              >
-                <XCircle className="w-4 h-4 text-slate-400" />
-                <span>Reject</span>
-              </button>
-            </form>
+            <RecommendationActions
+              grievanceId={grievance.id}
+              grievanceNumber={grievance.grievanceNumber}
+              initialStatus={latestRec?.status || 'PENDING'}
+              actionTakenBy={latestRec?.actionTakenBy}
+              returnUrl={`/grievances/${grievance.grievanceNumber}`}
+            />
           </div>
         </div>
       </div>

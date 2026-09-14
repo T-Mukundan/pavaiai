@@ -44,6 +44,8 @@ export default function GrievanceMap({ grievances, activeFilter = 'ALL' }: Griev
   const markersRef = useRef<any[]>([]);
   const [selectedGrievance, setSelectedGrievance] = useState<GrievancePoint | null>(null);
   const [activeLayer, setActiveLayer] = useState<string>('ALL');
+  const [baseMapStyle, setBaseMapStyle] = useState<'OSM' | 'DARK'>('OSM');
+  const tileLayersRef = useRef<any[]>([]);
 
   useEffect(() => {
     if (typeof window === 'undefined' || !mapContainerRef.current) return;
@@ -70,22 +72,8 @@ export default function GrievanceMap({ grievances, activeFilter = 'ALL' }: Griev
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Sleek Dark Canvas tile layer (100% Free, Zero Watermark, No API Key Required)
-      L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
-        {
-          attribution: '&copy; Esri, OpenStreetMap contributors',
-          maxZoom: 18,
-        }
-      ).addTo(map);
-
-      // Add high-contrast road, ward & administrative boundary labels
-      L.tileLayer(
-        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
-        {
-          maxZoom: 18,
-        }
-      ).addTo(map);
+      // Default Basemap: Leaflet + OpenStreetMap (100% Free, High Resolution, Zero API Key)
+      applyTileLayer(L, map, baseMapStyle);
 
       mapInstanceRef.current = map;
 
@@ -100,6 +88,48 @@ export default function GrievanceMap({ grievances, activeFilter = 'ALL' }: Griev
       }
     };
   }, [grievances]);
+
+  const applyTileLayer = (L: any, map: any, style: 'OSM' | 'DARK') => {
+    // Clear previous tile layers
+    tileLayersRef.current.forEach((layer) => {
+      try {
+        map.removeLayer(layer);
+      } catch {}
+    });
+    tileLayersRef.current = [];
+
+    if (style === 'OSM') {
+      // Leaflet + OpenStreetMap Standard Tile Layer
+      const osm = L.tileLayer('https://{s}.tile.openstreetmap.org/{z}/{x}/{y}.png', {
+        maxZoom: 19,
+        attribution: '&copy; <a href="https://www.openstreetmap.org/copyright" target="_blank" rel="noopener noreferrer">OpenStreetMap</a> contributors',
+      }).addTo(map);
+      tileLayersRef.current.push(osm);
+    } else {
+      // Dark Canvas fallback layer
+      const base = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; Esri, OpenStreetMap contributors',
+          maxZoom: 18,
+        }
+      ).addTo(map);
+      const labels = L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        { maxZoom: 18 }
+      ).addTo(map);
+      tileLayersRef.current.push(base, labels);
+    }
+  };
+
+  // Handle Base Map Tile Layer Style Change (OSM vs Dark)
+  useEffect(() => {
+    if (!mapInstanceRef.current || typeof window === 'undefined') return;
+    import('leaflet').then((leafletModule) => {
+      const L = leafletModule.default || leafletModule;
+      applyTileLayer(L, mapInstanceRef.current, baseMapStyle);
+    });
+  }, [baseMapStyle]);
 
   // Handle Layer/Filter Change
   useEffect(() => {
@@ -195,29 +225,57 @@ export default function GrievanceMap({ grievances, activeFilter = 'ALL' }: Griev
       {/* Map Element */}
       <div ref={mapContainerRef} className="w-full h-full z-0" />
 
-      {/* Layer Switcher Controls (Top Left) */}
-      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-1.5 bg-dark-950/90 border border-dark-750 backdrop-blur-md p-1.5 rounded-lg shadow-lg">
-        <span className="text-[10px] font-mono font-bold text-slate-400 px-2 uppercase flex items-center gap-1">
-          <Layers className="w-3 h-3 text-gold-400" /> Layers:
-        </span>
-        {[
-          { id: 'ALL', label: 'All Markers', color: 'text-slate-200' },
-          { id: 'HIGH_RISK', label: 'High Risk (>75%)', color: 'text-red-400' },
-          { id: 'DEADLOCK', label: 'Deadlocks', color: 'text-purple-400' },
-          { id: 'RECURRING', label: 'Recurring Clusters', color: 'text-gold-400' },
-        ].map((layer) => (
+      {/* Layer & Basemap Switcher Controls (Top Left) */}
+      <div className="absolute top-4 left-4 z-10 flex flex-wrap items-center gap-2 bg-dark-950/90 border border-dark-750 backdrop-blur-md p-1.5 rounded-lg shadow-lg">
+        <div className="flex items-center gap-1.5 border-r border-dark-800 pr-2">
+          <span className="text-[10px] font-mono font-bold text-slate-400 px-1 uppercase flex items-center gap-1">
+            <Layers className="w-3 h-3 text-gold-400" /> Layers:
+          </span>
+          {[
+            { id: 'ALL', label: 'All', color: 'text-slate-200' },
+            { id: 'HIGH_RISK', label: 'High Risk', color: 'text-red-400' },
+            { id: 'DEADLOCK', label: 'Deadlocks', color: 'text-purple-400' },
+            { id: 'RECURRING', label: 'Recurring', color: 'text-gold-400' },
+          ].map((layer) => (
+            <button
+              key={layer.id}
+              onClick={() => setActiveLayer(layer.id)}
+              className={`px-2 py-0.5 text-xs font-bold rounded transition-all ${
+                activeLayer === layer.id
+                  ? 'bg-gold-500 text-black shadow-gold-glow'
+                  : `bg-dark-900 ${layer.color} hover:bg-dark-800 border border-dark-800`
+              }`}
+            >
+              {layer.label}
+            </button>
+          ))}
+        </div>
+
+        {/* Basemap Switcher: Leaflet + OpenStreetMap vs Dark */}
+        <div className="flex items-center gap-1 bg-dark-900/90 border border-dark-800 p-0.5 rounded-md">
           <button
-            key={layer.id}
-            onClick={() => setActiveLayer(layer.id)}
-            className={`px-2.5 py-1 text-xs font-bold rounded transition-all ${
-              activeLayer === layer.id
-                ? 'bg-gold-500 text-black shadow-gold-glow'
-                : `bg-dark-900 ${layer.color} hover:bg-dark-800 border border-dark-800`
+            type="button"
+            onClick={() => setBaseMapStyle('OSM')}
+            className={`px-2 py-0.5 text-[11px] font-mono font-bold rounded transition-all ${
+              baseMapStyle === 'OSM'
+                ? 'bg-blue-600 text-white shadow-sm'
+                : 'text-slate-400 hover:text-white'
             }`}
           >
-            {layer.label}
+            OSM Standard
           </button>
-        ))}
+          <button
+            type="button"
+            onClick={() => setBaseMapStyle('DARK')}
+            className={`px-2 py-0.5 text-[11px] font-mono font-bold rounded transition-all ${
+              baseMapStyle === 'DARK'
+                ? 'bg-gold-500 text-black shadow-sm'
+                : 'text-slate-400 hover:text-white'
+            }`}
+          >
+            Dark Mode
+          </button>
+        </div>
       </div>
 
       {/* Hotspots Quick Switcher Button (Top Right) */}

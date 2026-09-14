@@ -59,7 +59,7 @@ export default async function MapPage({
               GEOGRAPHIC GIS INTELLIGENCE MAP
             </h1>
             <span className="text-xs font-mono font-bold px-2 py-0.5 rounded bg-gold-500/15 text-gold-400 border border-gold-500/30">
-              Esri Dark Canvas GIS
+              Leaflet + OpenStreetMap
             </span>
           </div>
           <p className="text-xs text-slate-400 mt-1">

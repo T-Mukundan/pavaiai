@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import RecommendationActions from '@/components/grievance/RecommendationActions';
 import { CheckCheck, CheckCircle2, XCircle, Clock, ArrowUpRight, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -61,27 +62,14 @@ export default async function RecommendationsPage() {
 
             {/* Actions for Nodal Officer */}
             <div className="flex flex-col sm:flex-row items-stretch sm:items-center gap-2 flex-shrink-0">
-              <form action="/api/recommendations/approve" method="POST">
-                <input type="hidden" name="grievanceId" value={rec.grievance.id} />
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto bg-emerald-600 hover:bg-emerald-500 text-white px-4 py-2 rounded-lg text-xs font-bold shadow-md transition flex items-center justify-center gap-1.5"
-                >
-                  <CheckCircle2 className="w-4 h-4" />
-                  <span>Approve</span>
-                </button>
-              </form>
-
-              <form action="/api/recommendations/reject" method="POST">
-                <input type="hidden" name="grievanceId" value={rec.grievance.id} />
-                <button
-                  type="submit"
-                  className="w-full sm:w-auto bg-dark-800 hover:bg-dark-750 text-slate-300 px-3.5 py-2 rounded-lg text-xs font-semibold border border-dark-700 transition flex items-center justify-center gap-1.5"
-                >
-                  <XCircle className="w-4 h-4 text-slate-400" />
-                  <span>Reject</span>
-                </button>
-              </form>
+              <RecommendationActions
+                grievanceId={rec.grievance.id}
+                grievanceNumber={rec.grievance.grievanceNumber}
+                initialStatus={rec.status}
+                actionTakenBy={rec.actionTakenBy}
+                returnUrl="/dashboard/intelligence/recommendations"
+                compact={true}
+              />
 
               <a
                 href={`/grievances/${rec.grievance.grievanceNumber}`}
