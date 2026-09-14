@@ -70,12 +70,22 @@ export default function GrievanceMap({ grievances, activeFilter = 'ALL' }: Griev
 
       L.control.zoom({ position: 'topright' }).addTo(map);
 
-      // Dark CartoDB Matter tile layer for aesthetic compliance
-      L.tileLayer('https://{s}.basemaps.cartocdn.com/dark_all/{z}/{x}/{y}{r}.png', {
-        attribution: '&copy; OpenStreetMap contributors &copy; CARTO',
-        subdomains: 'abcd',
-        maxZoom: 19,
-      }).addTo(map);
+      // Sleek Dark Canvas tile layer (100% Free, Zero Watermark, No API Key Required)
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Base/MapServer/tile/{z}/{y}/{x}',
+        {
+          attribution: '&copy; Esri, OpenStreetMap contributors',
+          maxZoom: 18,
+        }
+      ).addTo(map);
+
+      // Add high-contrast road, ward & administrative boundary labels
+      L.tileLayer(
+        'https://server.arcgisonline.com/ArcGIS/rest/services/Canvas/World_Dark_Gray_Reference/MapServer/tile/{z}/{y}/{x}',
+        {
+          maxZoom: 18,
+        }
+      ).addTo(map);
 
       mapInstanceRef.current = map;
 
