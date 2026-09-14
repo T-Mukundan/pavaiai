@@ -1,0 +1,109 @@
+@tailwind base;
+@tailwind components;
+@tailwind utilities;
+
+@layer base {
+  :root {
+    --background: #08090d;
+    --foreground: #f8fafc;
+    --card: #0f1118;
+    --card-foreground: #f8fafc;
+    --popover: #0f1118;
+    --popover-foreground: #f8fafc;
+    --primary: #f5c518;
+    --primary-foreground: #000000;
+    --border: #1f2433;
+  }
+
+  body {
+    background-color: #08090d;
+    color: #f1f5f9;
+    font-family: 'Inter', system-ui, -apple-system, sans-serif;
+    -webkit-font-smoothing: antialiased;
+    overflow-x: hidden;
+  }
+
+  /* Custom scrollbar */
+  ::-webkit-scrollbar {
+    width: 6px;
+    height: 6px;
+  }
+  ::-webkit-scrollbar-track {
+    background: #08090d;
+  }
+  ::-webkit-scrollbar-thumb {
+    background: #23293d;
+    border-radius: 4px;
+  }
+  ::-webkit-scrollbar-thumb:hover {
+    background: #f5c518;
+  }
+}
+
+/* Glassmorphism & custom borders */
+.glass-panel {
+  background: rgba(15, 17, 24, 0.85);
+  backdrop-filter: blur(12px);
+  border: 1px solid rgba(255, 255, 255, 0.08);
+}
+
+.glass-panel-hover {
+  transition: all 0.25s cubic-bezier(0.4, 0, 0.2, 1);
+}
+
+.glass-panel-hover:hover {
+  border-color: rgba(245, 197, 24, 0.4);
+  transform: translateY(-2px);
+  box-shadow: 0 10px 30px -10px rgba(0, 0, 0, 0.7);
+}
+
+.gold-badge {
+  background: rgba(245, 197, 24, 0.12);
+  color: #f5c518;
+  border: 1px solid rgba(245, 197, 24, 0.3);
+}
+
+/* Pulse animations for high-risk map and dashboard indicators */
+@keyframes goldPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(245, 197, 24, 0.6);
+  }
+  50% {
+    box-shadow: 0 0 0 12px rgba(245, 197, 24, 0);
+  }
+}
+
+@keyframes redPulse {
+  0%, 100% {
+    box-shadow: 0 0 0 0 rgba(239, 68, 68, 0.7);
+  }
+  50% {
+    box-shadow: 0 0 0 14px rgba(239, 68, 68, 0);
+  }
+}
+
+.animate-gold-pulse {
+  animation: goldPulse 2s infinite;
+}
+
+.animate-red-pulse {
+  animation: redPulse 1.8s infinite;
+}
+
+/* Leaflet Map overrides for dark styling */
+.leaflet-container {
+  background-color: #0c0d12 !important;
+  font-family: inherit;
+}
+
+.leaflet-popup-content-wrapper {
+  background: #121520 !important;
+  color: #f1f5f9 !important;
+  border: 1px solid #2b3248 !important;
+  border-radius: 8px !important;
+  box-shadow: 0 10px 25px rgba(0,0,0,0.8) !important;
+}
+
+.leaflet-popup-tip {
+  background: #121520 !important;
+}

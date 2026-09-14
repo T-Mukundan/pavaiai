@@ -1,0 +1,38 @@
+# Dependencies
+node_modules/
+**/node_modules/
+
+# Next.js Build Output
+.next/
+**/.next/
+out/
+build/
+dist/
+
+# Netlify Build Output
+.netlify/
+**/.netlify/
+
+# Python Virtual Environments & Cache
+__pycache__/
+**/__pycache__/
+*.py[cod]
+*$py.class
+venv/
+.venv/
+env/
+
+# Environment Variables
+.env
+**/.env
+.env.local
+.env.*.local
+
+# Database
+prisma/*.db-journal
+**/*.db-journal
+
+# Logs & Temporary
+*.log
+.DS_Store
+Thumbs.db

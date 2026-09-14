@@ -1,0 +1,269 @@
+// Prisma Schema for PRAVAH-AI
+// Configured for local SQLite (and ready for PostgreSQL / pgvector)
+
+generator client {
+  provider      = "prisma-client-js"
+  binaryTargets = ["native", "rhel-openssl-1.0.x", "rhel-openssl-3.0.x", "debian-openssl-1.1.x"]
+}
+
+datasource db {
+  provider = "sqlite"
+  url      = env("DATABASE_URL")
+}
+
+model User {
+  id           String    @id @default(uuid())
+  name         String
+  email        String    @unique
+  passwordHash String
+  role         String    @default("CITIZEN") // CITIZEN, OFFICER, NODAL_OFFICER, ANALYST, SUPER_ADMIN
+  phone        String?
+  departmentId String?
+  department   Department? @relation(fields: [departmentId], references: [id])
+  officerProfile Officer?
+  notifications Notification[]
+  auditLogs    AuditLog[]
+  createdAt    DateTime  @default(now())
+  updatedAt    DateTime  @updatedAt
+}
+
+model Department {
+  id                 String       @id @default(uuid())
+  name               String
+  code               String       @unique
+  description        String?
+  parentDepartmentId String?
+  parentDepartment   Department?  @relation("DepartmentHierarchy", fields: [parentDepartmentId], references: [id])
+  subDepartments     Department[] @relation("DepartmentHierarchy")
+  active             Boolean      @default(true)
+  users              User[]
+  officers           Officer[]
+  grievances         Grievance[]
+  transfersFrom      Transfer[]   @relation("TransferFromDepartment")
+  transfersTo        Transfer[]   @relation("TransferToDepartment")
+  rootCauses         RootCause[]
+  slaConfigs         SLAConfig[]
+  createdAt          DateTime     @default(now())
+}
+
+model Officer {
+  id               String       @id @default(uuid())
+  userId           String       @unique
+  user             User         @relation(fields: [userId], references: [id], onDelete: Cascade)
+  departmentId     String
+  department       Department   @relation(fields: [departmentId], references: [id])
+  designation      String
+  workloadCapacity Int          @default(20) // max cases recommended
+  active           Boolean      @default(true)
+  assignedGrievances Grievance[]
+  transfersFrom    Transfer[]   @relation("TransferFromOfficer")
+  transfersTo      Transfer[]   @relation("TransferToOfficer")
+}
+
+model Location {
+  id           String      @id @default(uuid())
+  address      String
+  latitude     Float
+  longitude    Float
+  state        String
+  district     String
+  municipality String?
+  ward         String?
+  grievances   Grievance[]
+  rootCauses   RootCause[]
+}
+
+model Grievance {
+  id                String                 @id @default(uuid())
+  grievanceNumber   String                 @unique // e.g. GRV-2026-0001
+  title             String
+  description       String
+  category          String
+  subCategory       String?
+  departmentId      String
+  department        Department             @relation(fields: [departmentId], references: [id])
+  assignedOfficerId String?
+  assignedOfficer   Officer?               @relation(fields: [assignedOfficerId], references: [id])
+  locationId        String?
+  location          Location?              @relation(fields: [locationId], references: [id])
+  priority          String                 @default("MEDIUM") // LOW, MEDIUM, HIGH, CRITICAL
+  status            String                 @default("SUBMITTED") // SUBMITTED, IN_PROGRESS, UNDER_REVIEW, TRANSFERRED, RESOLVED, REJECTED
+  severity          String                 @default("MEDIUM") // LOW, MEDIUM, HIGH, SEVERE
+  citizenName       String?
+  citizenPhone      String?
+  citizenEmail      String?
+  resolvedAt        DateTime?
+  slaDeadline       DateTime
+  createdAt         DateTime               @default(now())
+  updatedAt         DateTime               @updatedAt
+
+  statusHistory     GrievanceStatusHistory[]
+  transfers         Transfer[]
+  media             Media[]
+  embedding         Embedding?
+  riskPrediction    RiskPrediction?
+  riskExplanations  RiskExplanation[]
+  deadlockDetection DeadlockDetection?
+  recommendations   Recommendation[]
+}
+
+model GrievanceStatusHistory {
+  id          String    @id @default(uuid())
+  grievanceId String
+  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  status      String
+  remarks     String?
+  changedBy   String    // user name or ID
+  createdAt   DateTime  @default(now())
+}
+
+model Transfer {
+  id               String      @id @default(uuid())
+  grievanceId      String
+  grievance        Grievance   @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  fromDepartmentId String
+  fromDepartment   Department  @relation("TransferFromDepartment", fields: [fromDepartmentId], references: [id])
+  toDepartmentId   String
+  toDepartment     Department  @relation("TransferToDepartment", fields: [toDepartmentId], references: [id])
+  fromOfficerId    String?
+  fromOfficer      Officer?    @relation("TransferFromOfficer", fields: [fromOfficerId], references: [id])
+  toOfficerId      String?
+  toOfficer        Officer?    @relation("TransferToOfficer", fields: [toOfficerId], references: [id])
+  reason           String
+  transferredAt    DateTime    @default(now())
+}
+
+model Media {
+  id          String         @id @default(uuid())
+  grievanceId String
+  grievance   Grievance      @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  fileUrl     String
+  mediaType   String         @default("image") // image, video, document
+  capturedAt  DateTime       @default(now())
+  latitude    Float?
+  longitude   Float?
+  uploadedBy  String?
+  analysis    MediaAnalysis?
+  createdAt   DateTime       @default(now())
+}
+
+model MediaAnalysis {
+  id              String   @id @default(uuid())
+  mediaId         String   @unique
+  media           Media    @relation(fields: [mediaId], references: [id], onDelete: Cascade)
+  detectedObjects String   // serialized JSON array of strings e.g. ["Damaged asphalt", "Standing water"]
+  severity        String   // LOW, MEDIUM, HIGH
+  description     String
+  confidence      Float    // 0.0 to 1.0
+  model           String   @default("pravah-vision-v1")
+  analyzedAt      DateTime @default(now())
+}
+
+model Embedding {
+  id          String    @id @default(uuid())
+  grievanceId String    @unique
+  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  vector      String    // serialized JSON float array (384 dimensions)
+  model       String    @default("all-MiniLM-L6-v2")
+  clusterId   String?
+  createdAt   DateTime  @default(now())
+}
+
+model SemanticCluster {
+  id             String   @id @default(uuid())
+  name           String
+  description    String
+  category       String
+  complaintCount Int      @default(0)
+  centroid       String?  // serialized float array
+  createdAt      DateTime @default(now())
+}
+
+model RiskPrediction {
+  id          String    @id @default(uuid())
+  grievanceId String    @unique
+  grievance   Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  riskScore   Int       // 0 to 100
+  riskLevel   String    // LOW, MEDIUM, HIGH, CRITICAL
+  model       String    @default("pravah-xgboost-v1")
+  predictedAt DateTime  @default(now())
+}
+
+model RiskExplanation {
+  id           String    @id @default(uuid())
+  grievanceId  String
+  grievance    Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  feature      String    // e.g. "Reassignment count", "Inactivity duration"
+  contribution Float     // e.g. +21.0
+  rank         Int
+}
+
+model DeadlockDetection {
+  id                  String    @id @default(uuid())
+  grievanceId         String    @unique
+  grievance           Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  detected            Boolean   @default(false)
+  cyclePath           String?   // serialized JSON array of dept names/codes
+  departmentsInvolved String?   // serialized JSON array of dept IDs
+  severity            String    @default("MEDIUM") // LOW, MEDIUM, HIGH
+  detectedAt          DateTime  @default(now())
+}
+
+model RootCause {
+  id            String      @id @default(uuid())
+  title         String
+  description   String
+  departmentId  String?
+  department    Department? @relation(fields: [departmentId], references: [id])
+  locationId    String?
+  location      Location?   @relation(fields: [locationId], references: [id])
+  evidenceCount Int         @default(1)
+  confidence    Float       @default(0.85)
+  status        String      @default("IDENTIFIED") // IDENTIFIED, INVESTIGATING, MITIGATED, RESOLVED
+  createdAt     DateTime    @default(now())
+}
+
+model Recommendation {
+  id             String    @id @default(uuid())
+  grievanceId    String
+  grievance      Grievance @relation(fields: [grievanceId], references: [id], onDelete: Cascade)
+  type           String    // PRIORITIZE, REASSIGN, REROUTE, ESCALATE, MONITOR
+  recommendation String
+  reason         String
+  confidence     Float     // 0.0 to 1.0
+  status         String    @default("PENDING") // PENDING, APPROVED, REJECTED, REVIEWED
+  actionTakenBy  String?
+  createdAt      DateTime  @default(now())
+}
+
+model Notification {
+  id        String   @id @default(uuid())
+  userId    String
+  user      User     @relation(fields: [userId], references: [id], onDelete: Cascade)
+  title     String
+  message   String
+  type      String   @default("INFO") // INFO, WARNING, SLA_BREACH, DEADLOCK, RECOMMENDATION
+  read      Boolean  @default(false)
+  createdAt DateTime @default(now())
+}
+
+model AuditLog {
+  id         String   @id @default(uuid())
+  userId     String?
+  user       User?    @relation(fields: [userId], references: [id])
+  action     String   // LOGIN, CREATE_GRIEVANCE, TRANSFER, STATUS_UPDATE, APPROVE_RECOMMENDATION, etc.
+  entityType String   // GRIEVANCE, RECOMMENDATION, USER, DEPARTMENT
+  entityId   String?
+  metadata   String?  // serialized JSON
+  createdAt  DateTime @default(now())
+}
+
+model SLAConfig {
+  id              String     @id @default(uuid())
+  departmentId    String
+  department      Department @relation(fields: [departmentId], references: [id])
+  category        String
+  targetHours     Int        @default(72)  // 3 days
+  escalationHours Int        @default(120) // 5 days
+  active          Boolean    @default(true)
+}
