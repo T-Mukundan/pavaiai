@@ -9,9 +9,16 @@ export async function GET(request: Request) {
     const departmentId = searchParams.get('departmentId');
     const search = searchParams.get('search');
 
+    const city = searchParams.get('city');
+
     const where: any = {};
-    if (status) where.status = status;
+    if (status && status !== 'ALL') where.status = status;
     if (departmentId) where.departmentId = departmentId;
+    if (city && city !== 'ALL' && city !== 'all') {
+      where.location = {
+        district: { contains: city },
+      };
+    }
     if (search) {
       where.OR = [
         { title: { contains: search } },
@@ -51,6 +58,9 @@ export async function POST(request: Request) {
       latitude,
       longitude,
       evidence,
+      city,
+      state,
+      municipality,
     } = body;
 
     // 1. Resolve or find department
@@ -67,16 +77,20 @@ export async function POST(request: Request) {
       dept = await prisma.department.findFirst() || ({} as any);
     }
 
-    // 2. Resolve or create Location
+    // 2. Resolve or create Location with dynamic city & state
+    const resolvedCity = city || 'Bengaluru Urban';
+    const resolvedState = state || 'Karnataka';
+    const resolvedMuni = municipality || 'BBMP';
+
     const loc = await prisma.location.create({
       data: {
-        address: address || 'Reported Location',
-        latitude: latitude || 12.9716,
-        longitude: longitude || 77.5946,
-        state: 'Karnataka',
-        district: 'Bengaluru Urban',
-        municipality: 'BBMP',
-        ward: ward || 'Ward 112',
+        address: address || `${ward || 'Central Zone'}, ${resolvedCity}`,
+        latitude: typeof latitude === 'number' ? latitude : 12.9716,
+        longitude: typeof longitude === 'number' ? longitude : 77.5946,
+        state: resolvedState,
+        district: resolvedCity,
+        municipality: resolvedMuni,
+        ward: ward || 'Central Zone',
       },
     });
 
@@ -162,26 +176,24 @@ export async function POST(request: Request) {
       });
     }
 
-    // 9b. Optional MongoDB Real-time Sync
+    // 9b. Non-blocking MongoDB Real-time Sync
     try {
-      const { getMongoDb } = await import('@/lib/mongodb');
-      const mongoDb = await getMongoDb();
-      if (mongoDb) {
-        await mongoDb.collection('grievances').insertOne({
-          grievanceNumber: grvNumber,
-          title,
-          description,
-          category,
-          department: dept?.name,
-          ward,
-          slaDeadline,
-          riskScore: riskResult.risk_score,
-          createdAt: new Date(),
-        });
-      }
-    } catch (mErr) {
-      // Non-blocking sync
-    }
+      const { backgroundSyncGrievance } = await import('@/lib/mongodb');
+      backgroundSyncGrievance({
+        grievanceNumber: grvNumber,
+        title,
+        description,
+        category,
+        department: dept?.name,
+        city: resolvedCity,
+        state: resolvedState,
+        municipality: resolvedMuni,
+        ward,
+        slaDeadline,
+        riskScore: riskResult.risk_score,
+        createdAt: new Date(),
+      });
+    } catch {}
 
     // 10. Audit Log
     await prisma.auditLog.create({

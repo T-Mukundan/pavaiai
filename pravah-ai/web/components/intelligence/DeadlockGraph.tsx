@@ -2,6 +2,7 @@
 
 import React, { useState } from 'react';
 import { RotateCcw, AlertTriangle, ArrowRight, CheckCircle, ShieldAlert } from 'lucide-react';
+import { formatDate } from '@/lib/format';
 
 interface TransferItem {
   fromDepartment: string;
@@ -123,8 +124,8 @@ export default function DeadlockGraph({ cyclePath, transfers, isDeadlocked }: De
                     Reason: <span className="text-slate-300">"{t.reason}"</span>
                   </div>
                 </div>
-                <div className="text-[10px] font-mono text-slate-500 whitespace-nowrap">
-                  {new Date(t.transferredAt).toLocaleDateString()}
+                <div className="text-[10px] font-mono text-slate-500 whitespace-nowrap" suppressHydrationWarning>
+                  {formatDate(t.transferredAt)}
                 </div>
               </div>
             ))

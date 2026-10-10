@@ -1,7 +1,7 @@
 'use client';
 
 import React, { useState, useEffect } from 'react';
-import Link from 'next/navigation';
+import Link from 'next/link';
 import { usePathname, useRouter } from 'next/navigation';
 import { 
   ShieldAlert, 
@@ -63,6 +63,7 @@ export default function Header() {
     { label: 'DASHBOARD', href: '/dashboard' },
     { label: 'MAP GIS', href: '/dashboard/map' },
     { label: 'GRIEVANCES', href: '/dashboard/grievances' },
+    { label: 'CITIZEN PORTAL', href: '/citizen/grievances' },
     { label: 'AI INTELLIGENCE', href: '/dashboard/intelligence/risk' },
     { label: 'REPORTS', href: '/dashboard/reports' },
     { label: 'ADMIN', href: '/dashboard/admin' },

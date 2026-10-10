@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import { formatDate, formatDateTime } from '@/lib/format';
 import ShapWaterfall from '@/components/intelligence/ShapWaterfall';
 import DeadlockGraph from '@/components/intelligence/DeadlockGraph';
 import EvidenceTimeline from '@/components/media/EvidenceTimeline';
@@ -199,8 +200,8 @@ export default async function GrievanceDetailPage({
           <div className="flex items-center gap-3">
             <span className="text-xs text-slate-400">
               SLA Deadline:{' '}
-              <strong className="text-rose-400 font-mono">
-                {new Date(grievance.slaDeadline).toLocaleDateString()} (Overdue)
+              <strong className="text-rose-400 font-mono" suppressHydrationWarning>
+                {formatDate(grievance.slaDeadline)} (Overdue)
               </strong>
             </span>
             <div className="px-3 py-1 rounded bg-red-600 text-white font-mono font-black text-xs shadow-red-glow flex items-center gap-1">
@@ -219,7 +220,7 @@ export default async function GrievanceDetailPage({
         </p>
 
         {/* Metadata Grid */}
-        <div className="grid grid-cols-2 md:grid-cols-4 gap-4 pt-4 border-t border-dark-800 text-xs">
+        <div className="grid grid-cols-2 md:grid-cols-5 gap-4 pt-4 border-t border-dark-800 text-xs">
           <div>
             <span className="text-slate-500 block text-[10px] uppercase font-bold">Category</span>
             <span className="font-semibold text-white">{grievance.category}</span>
@@ -229,14 +230,20 @@ export default async function GrievanceDetailPage({
             <span className="font-semibold text-gold-400">{grievance.department.name}</span>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-bold">Assigned Officer</span>
-            <span className="font-semibold text-slate-200">
-              {grievance.assignedOfficer?.user?.name || 'Unassigned'}
+            <span className="text-slate-500 block text-[10px] uppercase font-bold">City & State</span>
+            <span className="font-semibold text-white">
+              {grievance.location?.district || 'Bengaluru'}{grievance.location?.state ? `, ${grievance.location?.state}` : ''}
             </span>
           </div>
           <div>
-            <span className="text-slate-500 block text-[10px] uppercase font-bold">Geographic Ward</span>
-            <span className="font-semibold text-slate-200">
+            <span className="text-slate-500 block text-[10px] uppercase font-bold">Municipal Body</span>
+            <span className="font-semibold text-slate-300">
+              {grievance.location?.municipality || 'Municipal Corporation'}
+            </span>
+          </div>
+          <div>
+            <span className="text-slate-500 block text-[10px] uppercase font-bold">Ward & Address</span>
+            <span className="font-semibold text-slate-200 truncate block" title={`${grievance.location?.ward || 'Central Zone'} — ${grievance.location?.address || ''}`}>
               {grievance.location?.ward || 'Central Zone'}
             </span>
           </div>
@@ -336,8 +343,8 @@ export default async function GrievanceDetailPage({
                 <span className="font-bold text-white">{h.status}</span>
                 <span className="text-slate-500">•</span>
                 <span className="text-slate-400">By {h.changedBy}</span>
-                <span className="text-slate-500 font-mono ml-auto">
-                  {new Date(h.createdAt).toLocaleString()}
+                <span className="text-slate-500 font-mono ml-auto" suppressHydrationWarning>
+                  {formatDateTime(h.createdAt)}
                 </span>
               </div>
               <p className="text-slate-300 mt-1">{h.remarks}</p>

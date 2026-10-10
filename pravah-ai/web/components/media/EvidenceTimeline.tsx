@@ -2,6 +2,7 @@
 
 import React from 'react';
 import { Camera, AlertCircle, Clock, ShieldAlert, CheckCircle2 } from 'lucide-react';
+import { formatDate } from '@/lib/format';
 
 interface EvidenceItem {
   id: string;
@@ -102,7 +103,7 @@ export default function EvidenceTimeline({ evidenceList }: EvidenceTimelineProps
             <div className="p-3 space-y-2 flex-1 flex flex-col justify-between">
               <div>
                 <div className="flex items-center justify-between text-[10px] text-slate-400 mb-1">
-                  <span className="font-mono">{new Date(item.capturedAt).toLocaleDateString()}</span>
+                  <span className="font-mono" suppressHydrationWarning>{formatDate(item.capturedAt)}</span>
                   <span className="text-emerald-400 font-mono">
                     Conf: {Math.round((item.analysis?.confidence || 0.88) * 100)}%
                   </span>

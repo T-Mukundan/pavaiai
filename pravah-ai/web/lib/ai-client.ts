@@ -2,10 +2,22 @@
 
 const AI_SERVICE_URL = process.env.AI_SERVICE_URL || 'http://127.0.0.1:8000';
 
+let isAiServiceOffline = false;
+let nextAiHealthCheckAt = 0;
+
+export function isAiServiceAvailable(): boolean {
+  return !isAiServiceOffline;
+}
+
 export async function callAI<T = any>(endpoint: string, payload: any, fallback: () => T): Promise<T> {
+  // If previously determined offline, skip network stall and use local ML fallback immediately
+  if (isAiServiceOffline && Date.now() < nextAiHealthCheckAt) {
+    return fallback();
+  }
+
   try {
     const controller = new AbortController();
-    const timeoutId = setTimeout(() => controller.abort(), 2500); // 2.5s timeout
+    const timeoutId = setTimeout(() => controller.abort(), 1200); // Fast 1.2s timeout
 
     const res = await fetch(`${AI_SERVICE_URL}${endpoint}`, {
       method: 'POST',
@@ -17,10 +29,13 @@ export async function callAI<T = any>(endpoint: string, payload: any, fallback: 
     clearTimeout(timeoutId);
 
     if (res.ok) {
+      isAiServiceOffline = false;
       return await res.json();
     }
   } catch (err) {
-    // Silent fallback to local deterministic ML calculation
+    // Service offline or timeout: engage circuit breaker for 20s
+    isAiServiceOffline = true;
+    nextAiHealthCheckAt = Date.now() + 20000;
   }
   return fallback();
 }

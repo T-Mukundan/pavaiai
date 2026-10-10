@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import { formatDate } from '@/lib/format';
 import { AlertTriangle, MapPin, ArrowUpRight, ShieldAlert, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -73,8 +74,8 @@ export default async function HighRiskPage() {
                   </div>
                   <div className="flex justify-between">
                     <span className="text-slate-500">SLA Deadline:</span>
-                    <span className="text-rose-400 font-mono font-bold">
-                      {new Date(g.slaDeadline).toLocaleDateString()}
+                    <span className="text-rose-400 font-mono font-bold" suppressHydrationWarning>
+                      {formatDate(g.slaDeadline)}
                     </span>
                   </div>
                 </div>

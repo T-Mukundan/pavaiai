@@ -1,6 +1,8 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
-import { Printer, ArrowLeft, ShieldCheck, Camera, Sparkles, MapPin, CheckCircle2 } from 'lucide-react';
+import PrintButton from '@/components/reports/PrintButton';
+import { formatDate, formatDateTime } from '@/lib/format';
+import { ArrowLeft, ShieldCheck, Camera, Sparkles, MapPin, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
 
@@ -63,15 +65,7 @@ export default async function VisualEvidenceReportPage({
           <ArrowLeft className="w-4 h-4" /> Return to Grievance View
         </a>
 
-        <button
-          onClick={() => {
-            if (typeof window !== 'undefined') window.print();
-          }}
-          className="flex items-center gap-1.5 bg-gold-500 hover:bg-gold-400 text-black px-4 py-2 rounded-lg text-xs font-bold shadow-gold-glow transition"
-        >
-          <Printer className="w-4 h-4" />
-          <span>Print / Export PDF Dossier</span>
-        </button>
+        <PrintButton />
       </div>
 
       {/* Official Government Dossier Header */}
@@ -94,8 +88,8 @@ export default async function VisualEvidenceReportPage({
             <span className="font-mono text-lg font-black text-gold-400 print:text-black">
               {grievance.grievanceNumber}
             </span>
-            <span className="text-[11px] font-mono text-slate-500 print:text-gray-500 block">
-              Generated: {new Date().toLocaleDateString()}
+            <span className="text-[11px] font-mono text-slate-500 print:text-gray-500 block" suppressHydrationWarning>
+              Generated: {formatDate(new Date())}
             </span>
           </div>
         </div>
@@ -154,7 +148,7 @@ export default async function VisualEvidenceReportPage({
               />
               <div className="p-2.5 text-[10px] text-slate-400 print:text-gray-600 font-mono bg-dark-950 print:bg-gray-200 flex justify-between">
                 <span>Original Citizen Capture</span>
-                <span>Timestamp: {new Date(primaryMedia?.capturedAt || grievance.createdAt).toLocaleString()}</span>
+                <span suppressHydrationWarning>Timestamp: {formatDateTime(primaryMedia?.capturedAt || grievance.createdAt)}</span>
               </div>
             </div>
 
@@ -217,8 +211,8 @@ export default async function VisualEvidenceReportPage({
                     Reason: "{t.reason}"
                   </div>
                 </div>
-                <span className="font-mono text-slate-500 text-[10px]">
-                  {new Date(t.transferredAt).toLocaleDateString()}
+                <span className="font-mono text-slate-500 text-[10px]" suppressHydrationWarning>
+                  {formatDate(t.transferredAt)}
                 </span>
               </div>
             ))}

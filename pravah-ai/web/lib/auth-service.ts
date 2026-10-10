@@ -1,6 +1,6 @@
 import crypto from 'crypto';
 import prisma from './prisma';
-import { getMongoDb } from './mongodb';
+import { backgroundSyncUser } from './mongodb';
 import { AuthUser, DEMO_USERS, UserRole } from './auth';
 import { signSessionToken } from './session';
 
@@ -188,22 +188,15 @@ export async function registerNewUser(data: {
     });
   }
 
-  // Also sync document to MongoDB if connected
-  try {
-    const mongoDb = await getMongoDb();
-    if (mongoDb) {
-      await mongoDb.collection('users').insertOne({
-        name: newUser.name,
-        email: newUser.email,
-        role: newUser.role,
-        phone: newUser.phone,
-        departmentId: newUser.departmentId,
-        createdAt: new Date(),
-      });
-    }
-  } catch (mongoErr) {
-    console.warn('Failed to sync new user to MongoDB:', mongoErr);
-  }
+  // Non-blocking background sync document to MongoDB if connected
+  backgroundSyncUser({
+    name: newUser.name,
+    email: newUser.email,
+    role: newUser.role,
+    phone: newUser.phone,
+    departmentId: newUser.departmentId,
+    createdAt: new Date(),
+  });
 
   const authUser: AuthUser = {
     id: newUser.id,

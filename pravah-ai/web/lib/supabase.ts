@@ -50,15 +50,22 @@ export async function uploadEvidenceToSupabase(
 
     const uniquePath = `evidence/${Date.now()}_${filename.replace(/[^a-zA-Z0-9.-]/g, '_')}`;
 
-    const { data, error } = await client.storage
+    // Protect against hanging uploads with a 2.5s maximum timeout
+    const uploadPromise = client.storage
       .from(BUCKET_NAME)
       .upload(uniquePath, fileBody, {
         contentType,
         upsert: true,
       });
 
+    const timeoutPromise = new Promise<{ data: null; error: Error }>((_, reject) =>
+      setTimeout(() => reject(new Error('Supabase storage upload timeout (2.5s)')), 2500)
+    );
+
+    const { error } = (await Promise.race([uploadPromise, timeoutPromise])) as any;
+
     if (error) {
-      console.error('Supabase upload error:', error);
+      console.warn('Supabase upload warning:', error.message || error);
       throw error;
     }
 

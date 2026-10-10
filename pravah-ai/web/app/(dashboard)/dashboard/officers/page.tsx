@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import OfficerRebalanceBanner from '@/components/dashboard/OfficerRebalanceBanner';
 import { Users, AlertTriangle, CheckCircle2, ArrowUpRight, ArrowRightLeft, Sparkles } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -34,23 +35,7 @@ export default async function OfficersPage() {
       </div>
 
       {/* Advisory Rebalance Alert */}
-      <div className="bg-dark-900 border-l-4 border-amber-500 p-4 rounded-r-xl border-y border-r border-dark-800 flex items-start justify-between gap-4 text-xs">
-        <div className="flex items-start gap-3">
-          <Sparkles className="w-5 h-5 text-amber-400 flex-shrink-0 mt-0.5" />
-          <div>
-            <strong className="text-white font-bold uppercase tracking-wider block mb-0.5">
-              AI Workload Redistribution Recommendation
-            </strong>
-            <span className="text-slate-300">
-              Senior Executive Engineer <strong className="text-gold-400">Vikram Malhotra (126% load)</strong> is currently over capacity with 25 active cases, while <strong>Aditya Sen (58% load)</strong> and <strong>Tanvi Saxena (44% load)</strong> possess surplus bandwidth. Reallocating 4 pending non-critical road inquiries will normalize divisional turnaround.
-            </span>
-          </div>
-        </div>
-
-        <button className="flex-shrink-0 bg-gold-500 hover:bg-gold-400 text-black px-3 py-1.5 rounded-lg text-xs font-bold transition shadow-gold-glow">
-          Initiate Rebalance
-        </button>
-      </div>
+      <OfficerRebalanceBanner />
 
       {/* Officer Workload Table */}
       <div className="bg-dark-900 border border-dark-800 rounded-xl overflow-hidden shadow-card-dark">

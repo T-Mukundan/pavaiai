@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import { formatDateTime } from '@/lib/format';
 import { Bell, AlertTriangle, ShieldAlert, RotateCcw, Sparkles, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -56,8 +57,8 @@ export default async function NotificationsPage() {
               <div className="space-y-1 flex-1">
                 <div className="flex items-center justify-between">
                   <span className="text-xs font-bold text-white">{n.title}</span>
-                  <span className="text-[10px] font-mono text-slate-500">
-                    {new Date(n.createdAt).toLocaleString()}
+                  <span className="text-[10px] font-mono text-slate-500" suppressHydrationWarning>
+                    {formatDateTime(n.createdAt)}
                   </span>
                 </div>
                 <p className="text-xs text-slate-300 leading-relaxed">{n.message}</p>

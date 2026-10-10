@@ -72,7 +72,7 @@ export default async function AllGrievancesPage({
       </div>
 
       {/* Filter Toolbar */}
-      <div className="bg-dark-900 border border-dark-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-3 text-xs">
+      <div className="bg-dark-900 border border-dark-800 rounded-xl p-4 flex flex-wrap items-center justify-between gap-4 text-xs">
         <div className="flex flex-wrap items-center gap-2">
           <a
             href="/dashboard/grievances"
@@ -108,8 +108,41 @@ export default async function AllGrievancesPage({
           </a>
         </div>
 
-        <div className="text-slate-400 font-mono text-[11px]">
-          Showing <strong>{grievances.length}</strong> records
+        {/* Search Bar */}
+        <form method="GET" action="/dashboard/grievances" className="flex items-center gap-2 flex-1 max-w-xs">
+          {statusFilter && <input type="hidden" name="status" value={statusFilter} />}
+          <div className="relative w-full">
+            <input
+              type="text"
+              name="search"
+              defaultValue={searchQuery || ''}
+              placeholder="Filter by keyword / ID..."
+              className="w-full bg-dark-950 border border-dark-750 rounded-lg pl-8 pr-3 py-1.5 text-xs text-white focus:outline-none focus:border-gold-500 placeholder:text-slate-500"
+            />
+            <Search className="w-3.5 h-3.5 text-slate-500 absolute left-2.5 top-2" />
+          </div>
+          {searchQuery && (
+            <a
+              href={`/dashboard/grievances${statusFilter ? `?status=${statusFilter}` : ''}`}
+              className="text-[11px] text-slate-400 hover:text-white"
+            >
+              Clear
+            </a>
+          )}
+        </form>
+
+        <div className="flex items-center gap-3">
+          <a
+            href="/api/reports/export?type=grievances"
+            className="flex items-center gap-1.5 bg-dark-850 hover:bg-dark-800 border border-dark-750 text-slate-300 px-3 py-1.5 rounded-lg text-xs font-semibold transition"
+            title="Download CSV Ledger"
+          >
+            <FileSpreadsheet className="w-3.5 h-3.5 text-gold-400" />
+            <span>Export CSV</span>
+          </a>
+          <div className="text-slate-400 font-mono text-[11px]">
+            <strong>{grievances.length}</strong> records
+          </div>
         </div>
       </div>
 

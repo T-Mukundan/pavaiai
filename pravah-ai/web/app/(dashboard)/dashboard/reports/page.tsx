@@ -117,10 +117,14 @@ export default function ReportsCenterPage() {
             </div>
 
             <div className="pt-3 border-t border-dark-800 flex items-center justify-between">
-              <button className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition">
+              <a
+                href="/api/reports/export?type=grievances"
+                className="flex items-center gap-1 text-xs text-slate-400 hover:text-white transition"
+                title="Download CSV Ledger"
+              >
                 <Download className="w-3.5 h-3.5 text-gold-400" />
                 <span>Export CSV</span>
-              </button>
+              </a>
               <a
                 href={r.link}
                 className="flex items-center gap-1 text-xs font-bold text-gold-400 hover:text-gold-300 uppercase"

@@ -1,5 +1,6 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
+import { formatDateTime } from '@/lib/format';
 import { ShieldCheck, Sliders, Database, Activity, Clock, UserCheck } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -142,8 +143,8 @@ export default async function AdminPage() {
                   <td className="py-2.5 px-4 text-slate-400 max-w-xs truncate">
                     {log.metadata || '{}'}
                   </td>
-                  <td className="py-2.5 px-4 text-right text-slate-500">
-                    {new Date(log.createdAt).toLocaleString()}
+                  <td className="py-2.5 px-4 text-right text-slate-500" suppressHydrationWarning>
+                    {formatDateTime(log.createdAt)}
                   </td>
                 </tr>
               ))}
