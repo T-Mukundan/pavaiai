@@ -78,18 +78,40 @@ export default function CitizenGrievancesExplorer({ initialGrievances }: Props) 
     }
   };
 
+  const [localGrievances, setLocalGrievances] = useState<GrievanceItem[]>([]);
+
+  // Load any grievances filed in this browser session
+  React.useEffect(() => {
+    try {
+      const stored = localStorage.getItem('pravah_local_grievances');
+      if (stored) {
+        const parsed = JSON.parse(stored);
+        if (Array.isArray(parsed) && parsed.length > 0) {
+          setLocalGrievances(parsed);
+        }
+      }
+    } catch {}
+  }, []);
+
+  // Merge server grievances with locally stored grievances
+  const allGrievances = useMemo(() => {
+    const existing = new Set(initialGrievances.map((g) => g.grievanceNumber));
+    const newFromLocal = localGrievances.filter((g) => !existing.has(g.grievanceNumber));
+    return [...newFromLocal, ...initialGrievances];
+  }, [initialGrievances, localGrievances]);
+
   // KPI Calculations
   const kpis = useMemo(() => {
-    const total = initialGrievances.length;
-    const inProgress = initialGrievances.filter((g) => g.status === 'IN_PROGRESS' || g.status === 'SUBMITTED').length;
-    const critical = initialGrievances.filter((g) => g.priority === 'CRITICAL' || (g.riskPrediction?.riskScore || 0) >= 80).length;
-    const resolved = initialGrievances.filter((g) => g.status === 'RESOLVED').length;
+    const total = allGrievances.length;
+    const inProgress = allGrievances.filter((g) => g.status === 'IN_PROGRESS' || g.status === 'SUBMITTED').length;
+    const critical = allGrievances.filter((g) => g.priority === 'CRITICAL' || (g.riskPrediction?.riskScore || 0) >= 80).length;
+    const resolved = allGrievances.filter((g) => g.status === 'RESOLVED').length;
     return { total, inProgress, critical, resolved };
-  }, [initialGrievances]);
+  }, [allGrievances]);
 
   // Filtered List
   const filteredGrievances = useMemo(() => {
-    return initialGrievances.filter((g) => {
+    return allGrievances.filter((g) => {
       // 1. Status Filter
       if (selectedStatus !== 'ALL') {
         if (selectedStatus === 'IN_PROGRESS') {

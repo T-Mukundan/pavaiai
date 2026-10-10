@@ -1,6 +1,7 @@
 import React from 'react';
 import prisma from '@/lib/prisma';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { getFallbackGrievanceById } from '@/lib/fallback-data';
 import ShapWaterfall from '@/components/intelligence/ShapWaterfall';
 import DeadlockGraph from '@/components/intelligence/DeadlockGraph';
 import EvidenceTimeline from '@/components/media/EvidenceTimeline';
@@ -30,47 +31,21 @@ export default async function GrievanceDetailPage({
 }) {
   const identifier = params.id;
 
-  // Search by either grievanceNumber or id
-  let grievance = await prisma.grievance.findFirst({
-    where: {
-      OR: [
-        { grievanceNumber: identifier },
-        { id: identifier },
-      ],
-    },
-    include: {
-      department: true,
-      assignedOfficer: {
-        include: { user: true },
-      },
-      location: true,
-      statusHistory: { orderBy: { createdAt: 'desc' } },
-      transfers: {
-        orderBy: { transferredAt: 'asc' },
-        include: {
-          fromDepartment: true,
-          toDepartment: true,
-          fromOfficer: { include: { user: true } },
-          toOfficer: { include: { user: true } },
-        },
-      },
-      media: {
-        include: { analysis: true },
-      },
-      riskPrediction: true,
-      riskExplanations: { orderBy: { rank: 'asc' } },
-      deadlockDetection: true,
-      recommendations: { orderBy: { createdAt: 'desc' } },
-    },
-  });
+  let grievance: any = null;
 
-  // Fallback to showcase if not found
-  if (!grievance) {
+  try {
     grievance = await prisma.grievance.findFirst({
-      where: { grievanceNumber: 'GRV-2026-0001' },
+      where: {
+        OR: [
+          { grievanceNumber: identifier },
+          { id: identifier },
+        ],
+      },
       include: {
         department: true,
-        assignedOfficer: { include: { user: true } },
+        assignedOfficer: {
+          include: { user: true },
+        },
         location: true,
         statusHistory: { orderBy: { createdAt: 'desc' } },
         transfers: {
@@ -82,13 +57,22 @@ export default async function GrievanceDetailPage({
             toOfficer: { include: { user: true } },
           },
         },
-        media: { include: { analysis: true } },
+        media: {
+          include: { analysis: true },
+        },
         riskPrediction: true,
         riskExplanations: { orderBy: { rank: 'asc' } },
         deadlockDetection: true,
         recommendations: { orderBy: { createdAt: 'desc' } },
       },
     });
+  } catch (err) {
+    console.warn('Prisma detail query failed on serverless, using fallback data:', err);
+  }
+
+  // Fallback to showcase/mock if not found in database
+  if (!grievance) {
+    grievance = getFallbackGrievanceById(identifier);
   }
 
   if (!grievance) {
@@ -107,11 +91,11 @@ export default async function GrievanceDetailPage({
   const latestRec = grievance.recommendations[0];
 
   // Format transfers for DeadlockGraph
-  const formattedTransfers = grievance.transfers.map((t) => ({
-    fromDepartment: t.fromDepartment.name,
-    toDepartment: t.toDepartment.name,
+  const formattedTransfers = (grievance.transfers || []).map((t: any) => ({
+    fromDepartment: t.fromDepartment?.name || 'Department',
+    toDepartment: t.toDepartment?.name || 'Department',
     reason: t.reason,
-    transferredAt: t.transferredAt.toISOString(),
+    transferredAt: t.transferredAt ? (typeof t.transferredAt === 'string' ? t.transferredAt : t.transferredAt.toISOString()) : new Date().toISOString(),
     fromOfficer: t.fromOfficer?.user?.name,
     toOfficer: t.toOfficer?.user?.name,
   }));
@@ -128,14 +112,14 @@ export default async function GrievanceDetailPage({
   }
 
   // Format SHAP contributors
-  const shapContributors = grievance.riskExplanations.map((e) => ({
+  const shapContributors = (grievance.riskExplanations || []).map((e: any) => ({
     feature: e.feature,
     contribution: e.contribution,
     rank: e.rank,
   }));
 
   // Format media evidence timeline items
-  const evidenceItems = grievance.media.map((m, idx) => {
+  const evidenceItems = (grievance.media || []).map((m: any, idx: number) => {
     let detectedObjs: string[] = ['Civic infrastructure defect'];
     if (m.analysis?.detectedObjects) {
       try {
@@ -145,7 +129,7 @@ export default async function GrievanceDetailPage({
     return {
       id: m.id,
       fileUrl: m.fileUrl,
-      capturedAt: m.capturedAt.toISOString(),
+      capturedAt: m.capturedAt ? (typeof m.capturedAt === 'string' ? m.capturedAt : m.capturedAt.toISOString()) : new Date().toISOString(),
       dayOffset: idx === 0 ? 1 : (idx === 1 ? 10 : 20),
       analysis: m.analysis
         ? {
@@ -336,7 +320,7 @@ export default async function GrievanceDetailPage({
           IMMUTABLE ADMINISTRATIVE AUDIT TRAIL
         </h3>
         <div className="relative pl-6 space-y-4 before:absolute before:left-2 before:top-2 before:bottom-2 before:w-0.5 before:bg-dark-750">
-          {grievance.statusHistory.map((h) => (
+          {(grievance.statusHistory || []).map((h: any) => (
             <div key={h.id} className="relative text-xs">
               <span className="absolute -left-6 top-1 w-2.5 h-2.5 rounded-full bg-gold-400 ring-4 ring-dark-900" />
               <div className="flex items-center gap-2">

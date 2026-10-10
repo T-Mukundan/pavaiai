@@ -2,6 +2,7 @@ import React from 'react';
 import prisma from '@/lib/prisma';
 import PrintButton from '@/components/reports/PrintButton';
 import { formatDate, formatDateTime } from '@/lib/format';
+import { getFallbackGrievanceById } from '@/lib/fallback-data';
 import { ArrowLeft, ShieldCheck, Camera, Sparkles, MapPin, CheckCircle2 } from 'lucide-react';
 
 export const dynamic = 'force-dynamic';
@@ -13,25 +14,13 @@ export default async function VisualEvidenceReportPage({
 }) {
   const identifier = params.id;
 
-  let grievance = await prisma.grievance.findFirst({
-    where: {
-      OR: [{ grievanceNumber: identifier }, { id: identifier }],
-    },
-    include: {
-      department: true,
-      location: true,
-      riskPrediction: true,
-      deadlockDetection: true,
-      media: { include: { analysis: true } },
-      statusHistory: { orderBy: { createdAt: 'desc' } },
-      transfers: { include: { fromDepartment: true, toDepartment: true } },
-    },
-  });
+  let grievance: any = null;
 
-  // Fallback to showcase if not found
-  if (!grievance) {
+  try {
     grievance = await prisma.grievance.findFirst({
-      where: { grievanceNumber: 'GRV-2026-0001' },
+      where: {
+        OR: [{ grievanceNumber: identifier }, { id: identifier }],
+      },
       include: {
         department: true,
         location: true,
@@ -42,6 +31,13 @@ export default async function VisualEvidenceReportPage({
         transfers: { include: { fromDepartment: true, toDepartment: true } },
       },
     });
+  } catch (err) {
+    console.warn('Prisma visual evidence query failed on serverless, using fallback data:', err);
+  }
+
+  // Fallback to showcase if not found
+  if (!grievance) {
+    grievance = getFallbackGrievanceById(identifier);
   }
 
   if (!grievance) return <div>Report Not Found</div>;
@@ -201,11 +197,11 @@ export default async function VisualEvidenceReportPage({
             Inter-Departmental Transfer Trajectory
           </h3>
           <div className="bg-dark-950 print:bg-white rounded-xl border border-dark-800 print:border-gray-300 divide-y divide-dark-800 print:divide-gray-200 text-xs">
-            {grievance.transfers.map((t, i) => (
+            {(grievance.transfers || []).map((t: any, i: number) => (
               <div key={i} className="p-3 flex justify-between items-center">
                 <div>
                   <span className="font-semibold text-white print:text-black">
-                    {t.fromDepartment.name} → {t.toDepartment.name}
+                    {t.fromDepartment?.name || 'Department'} → {t.toDepartment?.name || 'Department'}
                   </span>
                   <div className="text-[11px] text-slate-400 print:text-gray-600">
                     Reason: "{t.reason}"
